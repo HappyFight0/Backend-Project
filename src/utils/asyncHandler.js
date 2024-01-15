@@ -5,7 +5,7 @@
 // - try catch 
 // Both these methods use the higher order function.
 
-const aysncHandler = (requestHandler) => {
+const asyncHandler = (requestHandler) => {
      (req, res, next) => {
         Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err))
      }
