@@ -8,10 +8,15 @@
     "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "javascript",
+    "backend",
+    "chai"
+  ],
   "author": "Ayush Kanaujiya",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^3.0.2",
+    "nodemon": "^3.0.3",
     "prettier": "^3.2.1"
   },
   "dependencies": {
