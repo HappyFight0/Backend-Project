@@ -4,7 +4,7 @@ import { app } from "./app.js"
 
 //.env configuration
 dotenv.config({
-    path: "./env"
+    path: "./.env" // "./env" works as well"
 })
 
 //database connection
