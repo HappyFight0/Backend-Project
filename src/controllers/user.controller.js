@@ -334,20 +334,20 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
     }
 
     let oldAvatarUrl=req.user?.avatar;
-    try {
-        const user = await User.findByIdAndUpdate(
-            req.user?._id,
-            {
-                $set: {
-                    avatar: avatar.url
-                }
-            },
-            {
-                new: true
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                avatar: avatar.url
             }
-        ).select("-password")
-    } catch (error) {
-        throw new ApiError(500, "new Avatar url not updated on cloudinary")
+        },
+        {
+            new: true
+        }
+    ).select("-password")
+
+    if(!user){
+        throw new ApiError(500, "Something went wrong with update")
     }
 
     //delete old avatar on cloudinary
@@ -356,7 +356,6 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(500, "Old avatar couldn't be deleted")
     }
     
-
     return res
     .status(200)
     .json(
@@ -377,20 +376,20 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
     }
 
     let oldCoverImageUrl=req.user?.coverImage;
-    try {
-        const user = await User.findByIdAndUpdate(
-            req.user?._id,
-            {
-                $set: {
-                    coverImage: coverImage.url
-                }
-            },
-            {
-                new: true
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                coverImage: coverImage.url
             }
-        ).select("-password")
-    } catch (error) {
-        throw new ApiError(500, "new cover-image url not updated on cloudinary")
+        },
+        {
+            new: true
+        }
+    ).select("-password")
+
+    if(!user){
+        throw new ApiError(500, "Something went wrong with update")
     }
     
     //delete old cover-image on cloudinary
@@ -483,7 +482,7 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
 })
 
 const getWatchHistory = asyncHandler(async(req, res) => {
-     const user = await User.agregate([
+     const user = await User.aggregate([
         {
             $match: {
                 _id: new mongoose.Types.ObjectId(req.user._id) // the id in db is like this: "ObjectId 08900948454...." now when we put _id, we only get the numbers in string format. The mongoose itself handles the other part of the id. But when we are writing aggregation pipeline, its completely mongoDB feature so we need to conver the string to appropriate type using this feature of mongoose: "moongose.Types.ObjectId(_id)"
