@@ -1,5 +1,6 @@
 import {v2 as cloudinary} from 'cloudinary';
 import fs from "fs"
+import { ApiError } from './ApiError.js';
 
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
@@ -9,7 +10,7 @@ cloudinary.config({
 
 const uploadOnCloudinary = async (localFilePath) => {
     try {
-        if (!localFilePath) return null
+        if (!localFilePath) return null;
         //upload the file on cloudinary
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto"
@@ -25,17 +26,41 @@ const uploadOnCloudinary = async (localFilePath) => {
 
 const deleteOnCloudinary = async(publicUrl) => {
     try {
-        if(!publicUrl) return null
+        if(!publicUrl) return null;
 
-        const response = await cloudinary.uploader.destroy(publicUrl, {
+        // Extract the public ID from the URL
+        const publicId = cloudinary.url(imageUrl).public_id;
+
+        const response = await cloudinary.uploader.destroy(publicId, {
             resource_type: "auto"
         })
+
+        return response;
     } catch(error){
-        throw new error(500, "Something went wrong while deleting old file from cloudinary")
+        throw new ApiError(500, "Something went wrong while deleting old file from cloudinary")
     }
 }
 
+// No need of this; can diretlty get duration while uploading the file
+// const getVideoDuration = async(publicUrl) => {
+//     try {
+//         if(!publicUrl) return null;
+
+//         const publicId = cloudinary.url(imageUrl).public_id;
+        
+//         const response = await cloudinary.api.resource(publicId, {
+//             resource_type: "video",
+//             media_metadata: true,
+//           })
+
+//         return response;
+//     } catch(error) {
+//         throw new ApiError(500, "Something went wrong while fetching video duration")
+//     }
+// }
+
 export {
     uploadOnCloudinary,
-    deleteOnCloudinary
+    deleteOnCloudinary,
+    // getVideoDuration
 };

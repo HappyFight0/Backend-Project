@@ -61,7 +61,7 @@ const registerUser = asyncHandler( async (req, res) => {
 
     console.log(existedUser);
 
-    //multer provides the access to req.files after we pu the middleware in the user.routes
+    //multer provides the access to req.files after we put the middleware in the user.routes
     const avatarLocalPath = req.files?.avatar[0]?.path;
     // const coverImageLocalPath = req.files?.coverImage[0]?.path;
     let coverImageLocalPath;
@@ -548,4 +548,3 @@ export {
     getUserChannelProfile,
     getWatchHistory
 }
-
