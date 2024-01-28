@@ -13,9 +13,19 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         if(!channelId){
             throw new ApiError(400, "Error: Channel Id missing")
         }
+
+        //validate channelId is a valid object id using the method { isValidObjectId }
+        const isValidChannelId = isValidObjectId(channelId);
+        if(!isValidChannelId){
+            throw new ApiError(400, "Invalid channel id. The channel doesnot exists")
+        }
     
         let response = {};
-        const channel = await Subscription.find({channel: channelId, subscriber: req.body?._id});
+        const channel = await Subscription.findOne({
+            channel: mongoose.Types.ObjectId(channelId),
+            subscriber: mongoose.Types.ObjectId(req.user?._id),
+          });
+          
         if(channel){
             const deleteSubs = await Subscription.findByIdAndDelete(channel._id);
             if(!deleteSubs){
@@ -25,11 +35,11 @@ const toggleSubscription = asyncHandler(async (req, res) => {
             response["message"]= "Subscription removed successfully";
         } else{
             const addSubs = await Subscription.create({
-                subscriber: req.body?._id,
+                subscriber: req.user?._id,
                 channel: channelId
             })
             if(!addSubs){
-    
+                throw new ApiError(500, "Error: Subs not added");
             }
             response["subscription"] = addSubs;
             response["message"]= "Subscription added successfully";
@@ -56,8 +66,12 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         if(!channelId){
             throw new ApiError(400, "Error: Channel Id missing")
         }
+        const isValidChannelId = isValidObjectId(channelId);
+        if(!isValidChannelId){
+            throw new ApiError(400, "Invalid channel id. The channel doesnot exists")
+        }
     
-        const subscribers = await Subscription.find({ channel: channelId });
+        const subscribers = await Subscription.find({ channel: mongoose.Types.ObjectId(channelId) });
         //todo: check case1: when there are no subscriber, case 2: when there is error while fetching the subscriber
         if(!subscribers){
             throw new ApiError(500, "Error: Couldn't fetch the subscribers")
@@ -84,8 +98,13 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
         if(!subscriberId){
             throw new ApiError(400, "Error: Subscriber Id missing")
         }
+
+        const isValidSubscriberId = isValidObjectId(subscriberId);
+        if(!isValidSubscriberId){
+            throw new ApiError(400, "Invalid channel id. The channel doesnot exists")
+        }
     
-        const channelsSubscribed = await Subscription.find({ subscriber: subscriberId });
+        const channelsSubscribed = await Subscription.find({ subscriber: mongoose.Types.ObjectId(subscriberId) });
         //todo: check case1: when there are no subscriber, case 2: when there is error while fetching the subscriber
         if(!channelsSubscribed){
             throw new ApiError(500, "Error: Couldn't fetch the channelsSubscribed")

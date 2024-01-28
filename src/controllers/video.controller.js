@@ -1,4 +1,4 @@
-import mongoose, {isValidObjectId} from "mongoose"
+import mongoose, { isValidObjectId } from "mongoose"
 import {Video} from "../models/video.model.js"
 import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
@@ -12,7 +12,12 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
     let userIdQuery = {}
     if(userId){
-        userIdQuery = {owner: new mongoose.Types.ObjectId(userId)}
+        //TODO: test the feature with and without isValidObejectId and then accordingly make decision to add it everywhere. 
+        if(isValidObjectId(userId)){ 
+            userIdQuery = {owner: new mongoose.Types.ObjectId(userId)}
+        } else{
+            throw new ApiError(400, "Invalid user id!");
+        }
     }
 
     let searchQuery = {}
@@ -148,7 +153,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const video = await Video.create({
         videoFile: videoFile.url,
         thumbnail: thumbnail.url,
-        owner: req.body?._id,
+        owner: req.user?._id,
         title: title,
         description: description,
         duration: videoFile.duration //can diretly get the duration like this
@@ -174,6 +179,11 @@ const getVideoById = asyncHandler(async (req, res) => {
     //TODO: get video by id
     if(!videoId){
         throw new ApiError(400, "videoId is required in params")
+    }
+
+    const isValidvideoId = isValidObjectId(videoId);
+    if(!isValidvideoId){
+        throw new ApiError(400, "Invalid video id. The video doesnot exist")
     }
 
     try {
@@ -240,6 +250,11 @@ const updateVideo = asyncHandler(async (req, res) => {
         if(!videoId){
             throw new ApiError(400, "Error:VideoId missing in params")
         }
+
+        const isValidvideoId = isValidObjectId(videoId);
+        if(!isValidvideoId){
+            throw new ApiError(400, "Invalid video id. The video doesnot exist")
+        }
     
         const { title, description } = req.body
         if(
@@ -302,6 +317,11 @@ const deleteVideo = asyncHandler(async (req, res) => {
         if(!videoId){
             throw new ApiError(400, "Error: VideoId is required")
         }
+
+        const isValidvideoId = isValidObjectId(videoId);
+        if(!isValidvideoId){
+            throw new ApiError(400, "Invalid video id. The video doesnot exist")
+        }
     
         const video = await Video.findById(videoId);
         if(!video){
@@ -342,6 +362,11 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
         const { videoId } = req.params
         if(!videoId){
             throw new ApiError(400, "Error: VideoId is required")
+        }
+
+        const isValidvideoId = isValidObjectId(videoId);
+        if(!isValidvideoId){
+            throw new ApiError(400, "Invalid video id. The video doesnot exist")
         }
     
         const video =  await Video.findByIdAndUpdate(
@@ -385,7 +410,12 @@ const updateView = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Error: VideoId is required")
     }
 
-    const video = await findByIdAndUpdate(
+    const isValidvideoId = isValidObjectId(videoId);
+    if(!isValidvideoId){
+        throw new ApiError(400, "Invalid video id. The video doesnot exist")
+    }
+
+    const video = await Video.findByIdAndUpdate(
         videoId,
         {
             $inc: { 
@@ -401,8 +431,8 @@ const updateView = asyncHandler(async(req, res) => {
         throw new ApiError(500, "Error: View couldn't be updated")
     }
 
-    const user = await findByIdAndUpdate(
-        req.body?._id,
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
         {
             $push: {
                 watchHistory: videoId
