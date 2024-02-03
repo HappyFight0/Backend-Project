@@ -334,6 +334,7 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
     }
 
     let oldAvatarUrl=req.user?.avatar;
+    console.log("oldAvatarUrl: ", oldAvatarUrl)
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -351,7 +352,7 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
     }
 
     //delete old avatar on cloudinary
-    const deleteOldAvatar = await deleteOnCloudinary(oldAvatarUrl);
+    const deleteOldAvatar = await deleteOnCloudinary(oldAvatarUrl, "image");
     if(!deleteOldAvatar){
         throw new ApiError(500, "Old avatar couldn't be deleted")
     }

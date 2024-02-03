@@ -1,6 +1,7 @@
 import {v2 as cloudinary} from 'cloudinary';
 import fs from "fs"
 import { ApiError } from './ApiError.js';
+// import { extractPublicId } from 'cloudinary-build-url'
 
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
@@ -24,20 +25,26 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-const deleteOnCloudinary = async(publicUrl) => {
+const deleteOnCloudinary = async(publicUrl, resource="auto") => {
     try {
         if(!publicUrl) return null;
 
         // Extract the public ID from the URL
-        const publicId = cloudinary.url(imageUrl).public_id;
+        const publicId = (publicUrl) => publicUrl.split("/").pop().split(".")[0];
+        if(!publicId) throw new ApiError(500, "couldn't fetch the publicId")
+        const id = publicId(publicUrl)
 
-        const response = await cloudinary.uploader.destroy(publicId, {
-            resource_type: "auto"
+        const response = await cloudinary.uploader.destroy(id, {
+            resource_type: resource
         })
+        if(response.result==="not found") throw new ApiError(500, "couldn't destroy the file") 
+        //error: new image is uploaded and database is updated but the old image from cloudinary is not deleted
+        //To deal with this, we could store the urls of the image that couldn't be deleted and then later again try to delete all of them
+        console.log("response: ", response)
 
         return response;
     } catch(error){
-        throw new ApiError(500, "Something went wrong while deleting old file from cloudinary")
+        throw new ApiError(500, error?.message || "Something went wrong while deleting old file from cloudinary")
     }
 }
 
