@@ -22,8 +22,8 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     
         let response = {};
         const channel = await Subscription.findOne({
-            channel: mongoose.Types.ObjectId(channelId),
-            subscriber: mongoose.Types.ObjectId(req.user?._id),
+            channel: new mongoose.Types.ObjectId(channelId),
+            subscriber: new mongoose.Types.ObjectId(req.user?._id),
           });
           
         if(channel){
@@ -71,7 +71,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Invalid channel id. The channel doesnot exists")
         }
     
-        const subscribers = await Subscription.find({ channel: mongoose.Types.ObjectId(channelId) });
+        const subscribers = await Subscription.find({ channel: new mongoose.Types.ObjectId(channelId) });
         //todo: check case1: when there are no subscriber, case 2: when there is error while fetching the subscriber
         if(!subscribers){
             throw new ApiError(500, "Error: Couldn't fetch the subscribers")
@@ -104,7 +104,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Invalid channel id. The channel doesnot exists")
         }
     
-        const channelsSubscribed = await Subscription.find({ subscriber: mongoose.Types.ObjectId(subscriberId) });
+        const channelsSubscribed = await Subscription.find({ subscriber: new mongoose.Types.ObjectId(subscriberId) });
         //todo: check case1: when there are no subscriber, case 2: when there is error while fetching the subscriber
         if(!channelsSubscribed){
             throw new ApiError(500, "Error: Couldn't fetch the channelsSubscribed")

@@ -47,7 +47,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Error: Invalid userId")
         }
         const userTweets = await Tweet.find({
-            owner: mongoose.Types.ObjectId(userId)
+            owner: new mongoose.Types.ObjectId(userId)
         })
     
         if(!userTweets){

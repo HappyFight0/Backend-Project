@@ -51,7 +51,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Error: Invalid user id")
         }
     
-        const playlists = await Playlist.find({owner: mongoose.Types.ObjectId(userId)})
+        const playlists = await Playlist.find({owner: new mongoose.Types.ObjectId(userId)})
         if(!playlists){
             throw new ApiError(500, "Error: Couldn't fetch playlist")
         }

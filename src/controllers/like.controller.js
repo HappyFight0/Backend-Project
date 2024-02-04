@@ -17,8 +17,8 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         }
     
         const like = await Like.findOne({
-            video: mongoose.Types.ObjectId(videoId),
-            likedBy: mongoose.Types.ObjectId(req.user?._id)
+            video: new mongoose.Types.ObjectId(videoId),
+            likedBy: new mongoose.Types.ObjectId(req.user?._id)
         })
     
         let response = {}
@@ -70,8 +70,8 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         }
     
         const like = await Like.findOne({
-            comment: mongoose.Types.ObjectId(commentId),
-            likedBy: mongoose.Types.ObjectId(req.user?._id)
+            comment: new mongoose.Types.ObjectId(commentId),
+            likedBy: new mongoose.Types.ObjectId(req.user?._id)
         })
     
         let response = {}
@@ -124,8 +124,8 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
         }
     
         const like = await Like.findOne({
-            tweet: mongoose.Types.ObjectId(tweetId),
-            likedBy: mongoose.Types.ObjectId(req.user?._id)
+            tweet: new mongoose.Types.ObjectId(tweetId),
+            likedBy: new mongoose.Types.ObjectId(req.user?._id)
         })
     
         let response = {}

@@ -15,6 +15,16 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
         const pipeline = [];
     
+        // Match stage to filter published video or all video if owner===req.user._id
+        pipeline.push({
+            $match: {
+                $or: [
+                    { owner: req.user._id },
+                    { isPublished: true }
+                ]
+            }
+        })
+
         // Match stage to filter based on userId
         if (userId) {
             if(!isValidObjectId(userId)) throw new ApiError(400, "Invalid user Id")
@@ -145,9 +155,17 @@ const getVideoById = asyncHandler(async (req, res) => {
 
     try {
             const video = await Video.aggregate([
-                {
+                { //if not owner then check the condition video is published or not else just show the video
                     $match: {
-                        _id: new mongoose.Types.ObjectId(videoId)
+                        $and: [
+                            { _id: new mongoose.Types.ObjectId(videoId) },
+                            {
+                                $or: [
+                                    { owner: req.user._id },
+                                    { isPublished: true }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
@@ -225,6 +243,12 @@ const updateVideo = asyncHandler(async (req, res) => {
         if(!video){
             throw new ApiError(400, "Couldn't fetch video. It doesn't exist or deleted.")
         }
+
+        if (!video.owner.equals(req.user._id)) {
+            console.log("owner: ", video.owner);
+            console.log("user: ", req.user._id);
+            throw new ApiError(400, "Don't have authority to delete others video");
+          }
     
         let oldThumbnail;
         if(req.file){
@@ -246,7 +270,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     
         if(oldThumbnail){
             //delete old thumbnail from cloudinary after uploading new one
-            const deleteThumbnail = await deleteOnCloudinary(oldThumbnail);
+            const deleteThumbnail = await deleteOnCloudinary(oldThumbnail, "image");
             if(!deleteThumbnail){
                 throw new ApiError(500, "Error: Old thumbnail couldn't be deleted.")
             }
@@ -284,6 +308,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
         if(!video){
             throw new ApiError(400, "Couldn't fetch video. It doesn't exist or deleted.")
         }
+
+        if (!video.owner.equals(req.user._id)) {
+            console.log("owner: ", video.owner);
+            console.log("user: ", req.user._id);
+            throw new ApiError(400, "Don't have authority to delete others video");
+          }
     
         const videoUrl = video.videoFile;
         const thumbnailUrl = video.thumbnail;
@@ -293,8 +323,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
             throw new ApiError(500, "Error: Video not deleted")
         }
     
-        const deleteVideoUrl = await deleteOnCloudinary(videoUrl);
-        const deleteThumbnailUrl = await deleteOnCloudinary(thumbnailUrl);
+        const deleteVideoUrl = await deleteOnCloudinary(videoUrl, "video");
+        const deleteThumbnailUrl = await deleteOnCloudinary(thumbnailUrl, "image");
     
         if(!deleteVideoUrl || !deleteThumbnailUrl){
             throw new ApiError(500, "Error: Couldn't delete video or thumbnailnfrom cloudinary")
@@ -325,18 +355,11 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
         if(!isValidvideoId){
             throw new ApiError(400, "Invalid video id. The video doesnot exist")
         }
-    
-        const video =  await Video.findByIdAndUpdate(
-            videoId, {
-                $set: {
-                    isPublished: !isPublished
-                }
-            },
-            {
-                new: true
-            }
-        )
-    
+
+        const video = await Video.findById(videoId)
+        video.isPublished = !video.isPublished;
+        video.save({validateBeforeSave:false})
+          
         if(!video){
             throw new ApiError(500, "Something went wrong with toggle publish")
         }
