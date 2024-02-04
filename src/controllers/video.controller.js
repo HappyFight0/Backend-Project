@@ -8,106 +8,63 @@ import {deleteOnCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-
-    let userIdQuery = {}
-    if(userId){
-        //TODO: test the feature with and without isValidObejectId and then accordingly make decision to add it everywhere. 
-        if(isValidObjectId(userId)){ 
-            userIdQuery = {owner: new mongoose.Types.ObjectId(userId)}
-        } else{
-            throw new ApiError(400, "Invalid user id!");
-        }
-    }
-
-    let searchQuery = {}
-    if(query){
-        searchQuery = {
-            index: "getAllVideos", //created search index from the website using visual editor named: "getAllVideos". more detail on website
-            text: {
-                query: query,
-                path: ["name", "description"], // Fields to search in
-              },
-              regex: {
-                pattern: `^.*${searchText}.*`, //mongo instructed to add caret (^) at the beginning for M0 free cluster or M2/M5 shared cluster
-                options: "i", // Case-insensitive search
-              }
-        }
-    }
-    
-    let sortOptions = {}
-    if(sortBy){
-        if(sortBy !== "views" && sortBy !== "title" && sortBy !== "createdAt"){
-            throw new ApiError(400, "Invalid sortBy criteria. Possible sortBy criterias are: `views`, `titles`, `createdAt`.", )
-        }
-
-        if(!sortType){
-            throw new ApiError(400, "SortType missing")
-        }
-
-        if(sortType!== 1 && sortType!==-1){
-            throw new ApiError(400, "Invalid sortType criteria. Give 1 or -1")
-        }
-
-        sortOptions[sortBy]=sortType;
-    }
-
     try {
-        const videos = await Video.aggregate([
-            {
+        const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+    
+        const parsedLimit = parseInt(limit, 10)
+
+        const pipeline = [];
+    
+        // Match stage to filter based on userId
+        if (userId) {
+            if(!isValidObjectId(userId)) throw new ApiError(400, "Invalid user Id")
+            pipeline.push({
                 $match: {
-                    ...userIdQuery //if this query is empty then this stage will be skipped after using the spread operator
+                    owner: new mongoose.Types.ObjectId(userId)
                 }
-            },
-            {
-                $search: {
-                    ...searchQuery //if this query is empty then this stage will be skipped after using the spread operator
-                }
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    foreignField: "_id",
-                    localField: "owner",
-                    as: "owner",
-                    pipeline: [
-                        {
-                            $project: {
-                                username: 1,
-                                avatar: 1
-                            }
-                        }
+            });
+        }
+    
+        // Match stage to filter based on query
+        if (query) {
+            pipeline.push({
+                $match: {
+                    $or: [
+                        { title: { $regex: query, $options: 'i' } },
+                        { description: { $regex: query, $options: 'i' } }
                     ]
                 }
-            },
-            {
-                $addFields: {
-                    owner: {
-                        $first: "$owner"
-                    }
-                }
-            },
-            {
-                $sort: { 
-                    ...sortOptions ////if this query is empty then this stage will be skipped after using the spread operator
-                    }
-            },
-            {
-                $skip: (page-1)*limit //non-synchronous pagination
-            },
-            {
-                $limit: limit,
-            }
-        ])
-
-    return res
-        .status(200)
-        .json(
-        new ApiResponse(
-            200,
-            videos,
-            "All videos fetched successfully"
-        )
+            });
+        }
+    
+        // Sort stage based on sortBy and sortType
+        if (sortBy && sortType) {
+            const sort = {};
+            sort[sortBy] = sortType === 'asc' ? 1 : -1;
+            pipeline.push({ $sort: sort });
+        }
+    
+        // Skip and limit stages for pagination
+        if (page && limit) {
+            const skip = (page - 1) * parsedLimit;
+            pipeline.push({ $skip: skip });
+            pipeline.push({ $limit: parsedLimit });
+        }
+    
+        // Add more stages as needed based on your requirements
+    
+        // Your aggregation query using the pipeline
+        const videos = await Video.aggregate(pipeline);
+    
+        // Return the result
+        return res
+            .status(200)
+            .json(
+            new ApiResponse(
+                200,
+                videos,
+                "All videos fetched successfully"
+            )
         )
     } catch (error) {
         throw new ApiError(400, error?.message || "Something went wrong with Video Aggregation")

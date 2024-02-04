@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async(userId) => {
     try {
@@ -377,6 +378,7 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
     }
 
     let oldCoverImageUrl=req.user?.coverImage;
+    console.log("oldCoverImageUrl: ", oldCoverImageUrl)
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -394,7 +396,7 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
     }
     
     //delete old cover-image on cloudinary
-    const deleteOldCoverImage = await deleteOnCloudinary(oldCoverImageUrl);
+    const deleteOldCoverImage = await deleteOnCloudinary(oldCoverImageUrl, "image");
     if(!deleteOldCoverImage){
         throw new ApiError(500, "Old cover-image couldn't be deleted")
     }
@@ -445,10 +447,12 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
                 },
                 isSubscribed: {
                     $cond: {
-                        if: {$in: [req.user?._id, "$subsribers.susbscriber"]},
+                        if: {
+                            $in: [req.user?._id, "$subscribers.subscriber"]
+                        },
                         then: true,
                         else: false
-                    }
+                    }                    
                 }
             }
         },
