@@ -15,6 +15,9 @@ const createPlaylist = asyncHandler(async (req, res) => {
         ){
             throw new ApiError(400, "Error: Name and description cannot be empty")
         }
+
+        const existedPlaylist =  await Playlist.findOne({name})
+        if(existedPlaylist) throw new ApiError(400, "Playlist name already used by you")
     
         const playlist = await Playlist.create({
             name,
@@ -117,22 +120,41 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         ){
             throw new ApiError(400, "Error: Invalid playlistId and videoId")
         }
-    
+
+        // Check if the videoId was added to the playlist
+        const result = await Playlist.findById(playlistId)
+        if (result.videos.includes(videoId)) {
+            // Video already exists in the playlist
+            throw new ApiError(400, "Video already exists in the playlist");
+        }
+
         const updatePlaylist = await Playlist.findByIdAndUpdate(
             playlistId,
-            {
-                $push: {
-                    videos: videoId
-                }
-            },
-            {
-                new: true
-            }
-        )
-    
+            { $addToSet: { videos: videoId } }, //can use $push instead of $addToSet but items will not be unique
+            { new: true }
+        );
+
         if(!updatePlaylist){
             throw new ApiError(500, "Video Couldn't be added")
         }
+
+        //another way to do things
+        // const result = await Playlist.updateOne(
+        //     {
+        //         _id: mongoose.Types.ObjectId(playlistId),
+        //         videos: { 
+        //             $not: 
+        //             { 
+        //                 $in: [mongoose.Types.ObjectId(videoId)] 
+        //             } 
+        //         },
+        //     },
+        //     { $push: { videos: mongoose.Types.ObjectId(videoId) } }
+        // );
+
+        // if(result.modifiedCount===0) throw new ApiError(400, "Video already exists in the playlist")
+
+        
     
         return res
         .status(201)

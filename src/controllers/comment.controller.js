@@ -115,6 +115,9 @@ const updateComment = asyncHandler(async (req, res) => {
                 $set: {
                     content
                 }
+            },
+            {
+                new: true
             }
         )
     
